@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>問題集 進捗管理</title>
+<style>
+  :root {
+    --bg: #f7f6f2;
+    --card: #ffffff;
+    --border: #ddd8ca;
+    --text: #2c2c2a;
+    --text-sub: #6b6a63;
+    --accent: #0f6e56;
+    --accent-light: #e1f5ee;
+    --danger: #a32d2d;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+  .wrap {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 16px 0;
+  }
+  h1 {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 4px 16px 16px;
+  }
+  .carousel {
+    display: flex;
+    align-items: flex-start;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .carousel::-webkit-scrollbar { display: none; }
+  .page {
+    flex: 0 0 100%;
+    scroll-snap-align: center;
+    padding: 0 16px;
+  }
+  .subject-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+  }
+  .subject-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+  }
+  .subject-name {
+    font-size: 16px;
+    font-weight: 600;
+    border: none;
+    background: transparent;
+    color: var(--text);
+    padding: 2px 0;
+    width: 100%;
+    font-family: inherit;
+  }
+  .subject-name:focus {
+    outline: none;
+    border-bottom: 1px solid var(--accent);
+  }
+  .subject-progress {
+    font-size: 12px;
+    color: var(--text-sub);
+    margin-bottom: 8px;
+  }
+  .progress-bar {
+    height: 5px;
+    background: #eceae0;
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 10px;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    transition: width 0.2s ease;
+  }
+  .num-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+  .num-cell {
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    font-size: 12px;
+    background: var(--card);
+    color: var(--text-sub);
+    cursor: pointer;
+    user-select: none;
+  }
+  .num-cell.done {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    font-weight: 600;
+  }
+  .small-btn {
+    font-size: 12px;
+    color: var(--text-sub);
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 3px 8px;
+    cursor: pointer;
+  }
+  .small-btn.danger { color: var(--danger); border-color: var(--danger); }
+  .subject-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+    margin-top: 10px;
+  }
+  .dots {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin: 14px 0;
+  }
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    border: 1px solid var(--text-sub);
+    background: transparent;
+    padding: 0;
+    cursor: pointer;
+  }
+  .dot.active {
+    background: var(--text);
+    border-color: var(--text);
+  }
+  .page-label {
+    font-size: 20px;
+    font-weight: 600;
+    color: #ffffff;
+    margin-bottom: 10px;
+    border: none;
+    background: transparent;
+    padding: 2px 0;
+    width: 100%;
+    font-family: inherit;
+  }
+  .page-label:focus {
+    outline: none;
+    border-bottom: 1px solid var(--accent);
+  }
+  .add-subject-card {
+    background: var(--card);
+    border: 1px dashed var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+  }
+  .add-subject-card input {
+    width: 100%;
+    padding: 8px 10px;
+    margin-bottom: 8px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 14px;
+    background: #fff;
+  }
+  .add-subject-btn {
+    width: 100%;
+    padding: 10px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .page-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 4px;
+  }
+  .empty-msg {
+    text-align: center;
+    color: var(--text-sub);
+    font-size: 13px;
+    padding: 24px 0;
+  }
+  .add-page-card {
+    background: var(--card);
+    border: 1px dashed var(--border);
+    border-radius: 12px;
+    padding: 24px 16px;
+    text-align: center;
+  }
+  .add-page-btn {
+    padding: 10px 20px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .status-note {
+    font-size: 11px;
+    color: var(--text-sub);
+    text-align: center;
+    margin-top: 4px;
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <h1>問題集 進捗管理</h1>
+  <div class="carousel" id="carousel"></div>
+  <div class="dots" id="dots"></div>
+  <div class="status-note" id="status-note"></div>
+</div>
+
+<script>
+const STORAGE_KEY = "progress-tracker-state-pages";
+let state = { pages: [] };
+let currentIndex = 0;
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      state = JSON.parse(raw);
+    } else {
+      seedDefault();
+    }
+  } catch (e) {
+    seedDefault();
+  }
+  render();
+}
+
+function seedDefault() {
+  state = {
+    pages: [
+      {
+        id: "p1",
+        name: "ページ1",
+        subjects: [
+          { id: "s1", name: "問題集1", total: 31, done: [8,9,10,11,12] }
+        ]
+      }
+    ]
+  };
+}
+
+function saveState() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    document.getElementById("status-note").textContent = "";
+  } catch (e) {
+    document.getElementById("status-note").textContent = "保存に失敗しました";
+  }
+}
+
+function addSubject(pageId) {
+  const nameInput = document.getElementById("new-subject-name-" + pageId);
+  const totalInput = document.getElementById("new-subject-total-" + pageId);
+  const name = nameInput.value.trim();
+  const total = parseInt(totalInput.value, 10);
+  if (!name) {
+    nameInput.style.borderColor = "var(--danger)";
+    return;
+  }
+  if (!total || total < 1) {
+    totalInput.style.borderColor = "var(--danger)";
+    return;
+  }
+  const page = state.pages.find(p => p.id === pageId);
+  page.subjects.push({ id: "s" + Date.now(), name, total, done: [] });
+  saveState();
+  render();
+}
+
+function deleteSubject(pageId, subjectId) {
+  const page = state.pages.find(p => p.id === pageId);
+  page.subjects = page.subjects.filter(s => s.id !== subjectId);
+  saveState();
+  render();
+}
+
+function clearSubject(pageId, subjectId) {
+  const page = state.pages.find(p => p.id === pageId);
+  const subject = page.subjects.find(s => s.id === subjectId);
+  subject.done = [];
+  saveState();
+  updateProgressOnly(subjectId);
+}
+
+function toggleNum(pageId, subjectId, num) {
+  const page = state.pages.find(p => p.id === pageId);
+  const subject = page.subjects.find(s => s.id === subjectId);
+  const idx = subject.done.indexOf(num);
+  if (idx >= 0) {
+    subject.done.splice(idx, 1);
+  } else {
+    subject.done.push(num);
+  }
+  saveState();
+  updateProgressOnly(subjectId);
+}
+
+function updateProgressOnly(subjectId) {
+  let subject = null;
+  state.pages.forEach(p => {
+    const found = p.subjects.find(s => s.id === subjectId);
+    if (found) subject = found;
+  });
+  if (!subject) return;
+  const pct = subject.total ? Math.round((subject.done.length / subject.total) * 100) : 0;
+  const card = document.querySelector('[data-subject-id="' + subjectId + '"]');
+  if (!card) return;
+  card.querySelector(".subject-progress").textContent = subject.done.length + "/" + subject.total + " (" + pct + "%)";
+  card.querySelector(".progress-fill").style.width = pct + "%";
+  card.querySelectorAll(".num-cell").forEach(cell => {
+    const n = parseInt(cell.dataset.num, 10);
+    cell.classList.toggle("done", subject.done.includes(n));
+  });
+}
+
+function addPage() {
+  state.pages.push({ id: "p" + Date.now(), name: "ページ" + (state.pages.length + 1), subjects: [] });
+  saveState();
+  render();
+  scrollToIndex(state.pages.length - 1, false);
+}
+
+function deletePage(pageId) {
+  const idx = state.pages.findIndex(p => p.id === pageId);
+  if (state.pages.length <= 1) return;
+  state.pages = state.pages.filter(p => p.id !== pageId);
+  currentIndex = Math.max(0, Math.min(idx, state.pages.length - 1));
+  saveState();
+  render();
+  scrollToIndex(currentIndex, false);
+}
+
+function renamePage(pageId, newName) {
+  const page = state.pages.find(p => p.id === pageId);
+  page.name = newName.trim() || page.name;
+  saveState();
+}
+
+function renameSubject(pageId, subjectId, newName) {
+  const page = state.pages.find(p => p.id === pageId);
+  const subject = page.subjects.find(s => s.id === subjectId);
+  subject.name = newName.trim() || subject.name;
+  saveState();
+}
+
+function armButton(btn, normalText, armedText, onConfirm) {
+  btn.dataset.armed = "0";
+  btn.textContent = normalText;
+  btn.onclick = () => {
+    if (btn.dataset.armed === "1") {
+      onConfirm();
+    } else {
+      btn.dataset.armed = "1";
+      btn.textContent = armedText;
+      setTimeout(() => { btn.dataset.armed = "0"; btn.textContent = normalText; }, 3000);
+    }
+  };
+}
+
+function buildSubjectCard(pageId, subject) {
+  const card = document.createElement("div");
+  card.className = "subject-card";
+  card.dataset.subjectId = subject.id;
+
+  const header = document.createElement("div");
+  header.className = "subject-header";
+  const nameInput = document.createElement("input");
+  nameInput.type = "text";
+  nameInput.className = "subject-name";
+  nameInput.value = subject.name;
+  nameInput.onchange = () => renameSubject(pageId, subject.id, nameInput.value);
+  header.appendChild(nameInput);
+  card.appendChild(header);
+
+  const pct = subject.total ? Math.round((subject.done.length / subject.total) * 100) : 0;
+  const meta = document.createElement("div");
+  meta.className = "subject-progress";
+  meta.textContent = subject.done.length + "/" + subject.total + " (" + pct + "%)";
+  card.appendChild(meta);
+
+  const pbar = document.createElement("div");
+  pbar.className = "progress-bar";
+  pbar.innerHTML = `<div class="progress-fill" style="width:${pct}%"></div>`;
+  card.appendChild(pbar);
+
+  const grid = document.createElement("div");
+  grid.className = "num-grid";
+  for (let n = 1; n <= subject.total; n++) {
+    const cell = document.createElement("div");
+    cell.className = "num-cell" + (subject.done.includes(n) ? " done" : "");
+    cell.dataset.num = n;
+    cell.textContent = n;
+    cell.onclick = () => toggleNum(pageId, subject.id, n);
+    grid.appendChild(cell);
+  }
+  card.appendChild(grid);
+
+  const actions = document.createElement("div");
+  actions.className = "subject-actions";
+
+  const clearBtn = document.createElement("button");
+  clearBtn.className = "small-btn";
+  armButton(clearBtn, "一括解除", "本当に解除", () => clearSubject(pageId, subject.id));
+  actions.appendChild(clearBtn);
+
+  const delBtn = document.createElement("button");
+  delBtn.className = "small-btn danger";
+  armButton(delBtn, "削除", "本当に削除", () => deleteSubject(pageId, subject.id));
+  actions.appendChild(delBtn);
+
+  card.appendChild(actions);
+  return card;
+}
+
+function buildPage(page, pageIndex, totalPages) {
+  const wrap = document.createElement("div");
+  wrap.className = "page";
+
+  const label = document.createElement("input");
+  label.type = "text";
+  label.className = "page-label";
+  label.value = page.name || ("ページ" + (pageIndex + 1));
+  label.onchange = () => renamePage(page.id, label.value);
+  wrap.appendChild(label);
+
+  if (page.subjects.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "empty-msg";
+    empty.textContent = "このページにはまだ問題集がありません。";
+    wrap.appendChild(empty);
+  } else {
+    page.subjects.forEach(subject => {
+      wrap.appendChild(buildSubjectCard(page.id, subject));
+    });
+  }
+
+  const addCard = document.createElement("div");
+  addCard.className = "add-subject-card";
+  addCard.innerHTML = `
+    <input type="text" id="new-subject-name-${page.id}" placeholder="問題集の名前(例:簿記2級 商業簿記)">
+    <input type="number" id="new-subject-total-${page.id}" placeholder="全問題数(例:31)" min="1">
+  `;
+  const addBtn = document.createElement("button");
+  addBtn.className = "add-subject-btn";
+  addBtn.textContent = "このページに問題集を追加";
+  addBtn.onclick = () => addSubject(page.id);
+  addCard.appendChild(addBtn);
+  wrap.appendChild(addCard);
+
+  if (totalPages > 1) {
+    const footer = document.createElement("div");
+    footer.className = "page-footer";
+    const delPageBtn = document.createElement("button");
+    delPageBtn.className = "small-btn danger";
+    armButton(delPageBtn, "このページを削除", "本当に削除", () => deletePage(page.id));
+    footer.appendChild(delPageBtn);
+    wrap.appendChild(footer);
+  }
+
+  return wrap;
+}
+
+function buildAddPagePage() {
+  const wrap = document.createElement("div");
+  wrap.className = "page";
+  const card = document.createElement("div");
+  card.className = "add-page-card";
+  card.innerHTML = `<div class="add-hint" style="margin-bottom:10px;color:var(--text-sub);font-size:13px;">新しいページを追加</div>`;
+  const btn = document.createElement("button");
+  btn.className = "add-page-btn";
+  btn.textContent = "＋ページを追加";
+  btn.onclick = addPage;
+  card.appendChild(btn);
+  wrap.appendChild(card);
+  return wrap;
+}
+
+function render() {
+  const carousel = document.getElementById("carousel");
+  const dots = document.getElementById("dots");
+  carousel.innerHTML = "";
+  dots.innerHTML = "";
+
+  state.pages.forEach((page, i) => {
+    carousel.appendChild(buildPage(page, i, state.pages.length));
+  });
+  carousel.appendChild(buildAddPagePage());
+
+  const totalDots = state.pages.length + 1;
+  for (let i = 0; i < totalDots; i++) {
+    const dot = document.createElement("button");
+    dot.className = "dot" + (i === currentIndex ? " active" : "");
+    dot.setAttribute("aria-label", (i < state.pages.length ? state.pages[i].name : "追加") + "へ移動");
+    dot.onclick = () => scrollToIndex(i, true);
+    dots.appendChild(dot);
+  }
+
+  carousel.onscroll = onCarouselScroll;
+}
+
+let scrollTimeout;
+function onCarouselScroll() {
+  clearTimeout(scrollTimeout);
+  scrollTimeout = setTimeout(() => {
+    const carousel = document.getElementById("carousel");
+    const pageWidth = carousel.clientWidth;
+    const idx = Math.round(carousel.scrollLeft / pageWidth);
+    if (idx !== currentIndex) {
+      currentIndex = idx;
+      document.querySelectorAll(".dot").forEach((d, i) => {
+        d.classList.toggle("active", i === currentIndex);
+      });
+    }
+  }, 80);
+}
+
+function scrollToIndex(idx, smooth) {
+  const carousel = document.getElementById("carousel");
+  const pageWidth = carousel.clientWidth;
+  carousel.scrollTo({ left: pageWidth * idx, behavior: smooth ? "smooth" : "auto" });
+  currentIndex = idx;
+  document.querySelectorAll(".dot").forEach((d, i) => {
+    d.classList.toggle("active", i === currentIndex);
+  });
+}
+
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+loadState();
+</script>
+
+</body>
+</html>
