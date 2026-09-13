@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>数字選択ツール</title>
+<style>
+  :root {
+    --bg: #f5f5f7;
+    --card: #ffffff;
+    --accent: #ff6b35;
+    --text: #222;
+    --muted: #888;
+    --border: #ddd;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--bg);
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;
+    color: var(--text);
+    display: flex;
+    justify-content: center;
+    padding: 16px 12px calc(24px + env(safe-area-inset-bottom));
+  }
+  .container {
+    width: 100%;
+    max-width: 480px;
+  }
+  h1 {
+    font-size: 18px;
+    margin: 4px 0 14px;
+    text-align: center;
+  }
+
+  .add-panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 12px;
+    margin-bottom: 16px;
+  }
+  .add-panel .row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .add-panel .row:last-child { margin-bottom: 0; }
+  .field {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+  .field label {
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .field input {
+    padding: 12px 10px;
+    font-size: 16px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    width: 100%;
+    min-height: 44px;
+    -webkit-appearance: none;
+  }
+  .add-panel button {
+    padding: 12px 14px;
+    font-size: 15px;
+    font-weight: 600;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    white-space: nowrap;
+    min-height: 44px;
+    flex: 1;
+  }
+  .add-panel button:active { opacity: 0.75; }
+  .clear-btn {
+    background: none !important;
+    color: var(--muted) !important;
+    border: 1px solid var(--border) !important;
+    font-weight: 400 !important;
+  }
+
+  .grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 20px;
+    min-height: 56px;
+  }
+  .num-chip {
+    position: relative;
+    width: calc((100% - 8px * 5) / 6);
+    min-width: 48px;
+    aspect-ratio: 1 / 1;
+    border-radius: 12px;
+    background: var(--card);
+    border: 2px solid var(--border);
+    font-size: 15px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+    transition: background 0.12s, border-color 0.12s, transform 0.08s;
+  }
+  .num-chip:active { transform: scale(0.92); }
+  .num-chip.selected {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  .empty-msg {
+    color: var(--muted);
+    font-size: 13px;
+    padding: 8px 2px;
+  }
+
+  .progress-wrap {
+    margin-bottom: 20px;
+  }
+  .progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .progress-label .pct {
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .progress-track {
+    width: 100%;
+    height: 14px;
+    background: #e9e9ec;
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--accent);
+    border-radius: 999px;
+    transition: width 0.25s ease;
+  }
+
+  .reset-row {
+    display: flex;
+    justify-content: center;
+  }
+  .reset-btn {
+    width: 100%;
+    padding: 14px 20px;
+    font-size: 16px;
+    font-weight: 600;
+    background: var(--card);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+    min-height: 48px;
+  }
+  .reset-btn:active { opacity: 0.75; }
+
+  .status {
+    text-align: center;
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 10px;
+    min-height: 18px;
+    word-break: break-word;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>数字選択ツール</h1>
+
+  <div class="add-panel">
+    <div class="row">
+      <div class="field">
+        <label for="startInput">開始番号</label>
+        <input type="number" id="startInput" value="1">
+      </div>
+      <div class="field">
+        <label for="countInput">追加する個数</label>
+        <input type="number" id="countInput" value="10" min="1" max="200">
+      </div>
+    </div>
+    <div class="row">
+      <button id="addRangeBtn">まとめて追加</button>
+      <button id="clearAllBtn" class="clear-btn">全部消す</button>
+    </div>
+  </div>
+
+  <div class="grid" id="grid">
+    <div class="empty-msg" id="emptyMsg">「まとめて追加」で数字を作成してください</div>
+  </div>
+
+  <div class="progress-wrap">
+    <div class="progress-label">
+      <span>選択の進み具合</span>
+      <span><span class="pct" id="progressCount">0</span> / <span id="progressTotal">0</span></span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+  </div>
+
+  <div class="reset-row">
+    <button class="reset-btn" id="resetBtn">解除（選択を元に戻す）</button>
+  </div>
+
+  <div class="status" id="status"></div>
+</div>
+
+<script>
+  const grid = document.getElementById('grid');
+  const emptyMsg = document.getElementById('emptyMsg');
+  const startInput = document.getElementById('startInput');
+  const countInput = document.getElementById('countInput');
+  const addRangeBtn = document.getElementById('addRangeBtn');
+  const clearAllBtn = document.getElementById('clearAllBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const statusEl = document.getElementById('status');
+  const progressFill = document.getElementById('progressFill');
+  const progressCount = document.getElementById('progressCount');
+  const progressTotal = document.getElementById('progressTotal');
+
+  let numbers = []; // { value, selected }
+
+  function render() {
+    grid.querySelectorAll('.num-chip').forEach(el => el.remove());
+    emptyMsg.style.display = numbers.length === 0 ? 'block' : 'none';
+
+    numbers.forEach((item, idx) => {
+      const chip = document.createElement('div');
+      chip.className = 'num-chip' + (item.selected ? ' selected' : '');
+      chip.textContent = item.value;
+
+      chip.addEventListener('click', () => {
+        item.selected = !item.selected;
+        render();
+      });
+
+      grid.appendChild(chip);
+    });
+
+    updateStatus();
+  }
+
+  function updateStatus() {
+    const selected = numbers.filter(n => n.selected).map(n => n.value);
+    statusEl.textContent = selected.length
+      ? `選択中: ${selected.join(', ')}`
+      : '';
+
+    const total = numbers.length;
+    const done = selected.length;
+    const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+    progressFill.style.width = pct + '%';
+    progressCount.textContent = done;
+    progressTotal.textContent = total;
+  }
+
+  function addRange() {
+    const start = parseInt(startInput.value, 10);
+    let count = parseInt(countInput.value, 10);
+    if (isNaN(start) || isNaN(count)) return;
+    count = Math.max(1, Math.min(count, 200));
+
+    for (let i = 0; i < count; i++) {
+      numbers.push({ value: String(start + i), selected: false });
+    }
+    render();
+  }
+
+  addRangeBtn.addEventListener('click', addRange);
+
+  clearAllBtn.addEventListener('click', () => {
+    numbers = [];
+    render();
+  });
+
+  resetBtn.addEventListener('click', () => {
+    numbers.forEach(n => n.selected = false);
+    render();
+  });
+
+  render();
+</script>
+</body>
+</html>
